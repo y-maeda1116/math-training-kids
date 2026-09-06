@@ -249,6 +249,7 @@
     .mode-btn:active { transform: translateY(6px); box-shadow: 0 0 0 rgba(58, 54, 83, 0.9); }
     .mode-btn.is-selected { background: var(--pink); color: #fff; }
     .mode-btn.is-selected .mode-desc { opacity: 0.92; }
+    #input-grid .mode-btn.is-selected { background: var(--yellow); color: var(--ink); }
 
     /* ---- スタートボタン ---- */
     .btn-start {
@@ -370,6 +371,7 @@
       gap: 14px;
       margin-top: 20px;
     }
+    .choices[hidden] { display: none; }
     .choice-btn {
       font-family: inherit;
       color: #fff;
@@ -417,6 +419,70 @@
       40%  { transform: translateY(7px); }
       100% { transform: translateY(0); }
     }
+
+    /* ---- テンキー入力 ---- */
+    .keypad { margin-top: 20px; }
+    .keypad[hidden] { display: none; }
+    .keypad-display {
+      background: var(--paper);
+      border: var(--outline);
+      border-radius: var(--radius-md);
+      box-shadow: var(--drop);
+      padding: 8px 18px 10px;
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+      gap: 14px;
+    }
+    .keypad-display .kd-label {
+      font-size: clamp(0.85rem, 3.2vw, 1rem);
+      font-weight: 900;
+      letter-spacing: 0.12em;
+      opacity: 0.6;
+    }
+    .keypad-display .kd-value {
+      font-size: clamp(2rem, 9vw, 2.6rem);
+      font-weight: 900;
+      min-width: 2.2em;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+      color: var(--green-deep);
+      line-height: 1.15;
+    }
+    .keypad-display .kd-value.is-empty { color: rgba(58, 54, 83, 0.22); }
+    .keypad-display.is-correct { animation: flash-green 0.45s ease; }
+    .keypad-display.is-wrong   { animation: flash-red 0.45s ease; }
+    .keypad-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .key-btn {
+      font-family: inherit;
+      color: #fff;
+      background: linear-gradient(180deg, #6ec1ff, var(--blue-deep));
+      border: var(--outline);
+      border-radius: var(--radius-md);
+      box-shadow: var(--drop);
+      font-size: clamp(1.7rem, 7.5vw, 2.3rem);
+      font-weight: 900;
+      padding: clamp(10px, 3.2vw, 16px) 8px;
+      cursor: pointer;
+      font-variant-numeric: tabular-nums;
+      -webkit-user-select: none;
+      user-select: none;
+      transition: transform 0.08s ease, box-shadow 0.08s ease;
+    }
+    .key-btn.is-action {
+      background: linear-gradient(180deg, #cfd3e6, #9aa0bf);
+      font-size: clamp(0.95rem, 3.8vw, 1.2rem);
+      letter-spacing: 0.08em;
+    }
+    .key-btn.is-submit { background: linear-gradient(180deg, #79d6a6, var(--green-deep)); }
+    .key-btn:hover:not(:disabled)   { transform: translateY(-2px); box-shadow: 0 8px 0 rgba(58, 54, 83, 0.9); }
+    .key-btn:active:not(:disabled)  { transform: translateY(6px); box-shadow: 0 0 0 rgba(58, 54, 83, 0.9); }
+    .key-btn:disabled { cursor: default; opacity: 0.45; }
 
     /* ---- フィードバック ---- */
     .feedback {
@@ -662,6 +728,16 @@
           </button>
         </div>
 
+        <h2 class="card-title"><span class="step-num">3</span>こたえかたをえらぶ</h2>
+        <div class="mode-grid" id="input-grid">
+          <button type="button" class="mode-btn" data-input="choice" aria-pressed="false">
+            <span class="mode-name">🔤 4択</span><span class="mode-desc">えらんで こたえる</span>
+          </button>
+          <button type="button" class="mode-btn" data-input="keypad" aria-pressed="false">
+            <span class="mode-name">🧮 じかにいれる</span><span class="mode-desc">すうじを おしてね</span>
+          </button>
+        </div>
+
         <button type="button" id="btn-start" class="btn-start">スタート！</button>
       </div>
     </section>
@@ -681,6 +757,13 @@
       </div>
 
       <div class="choices" id="choices"></div>
+
+      <div class="keypad" id="keypad" hidden>
+        <div class="keypad-display" id="keypad-display">
+          <span class="kd-label">こたえ</span><span class="kd-value is-empty" id="keypad-value">?</span>
+        </div>
+        <div class="keypad-grid" id="keypad-grid"></div>
+      </div>
 
       <div class="feedback" role="status" aria-live="assertive" id="feedback"></div>
 
@@ -830,6 +913,7 @@
     const state = {
       unit: 'add',
       mode: 'ta',
+      input: 'choice',
       index: 0,
       correct: 0,
       combo: 0,
@@ -838,6 +922,7 @@
       endTime: 0,
       timerId: null,
       locked: false,
+      keypadBuffer: '',
       current: null,
     };
 
@@ -849,6 +934,11 @@
       screens: { home: $('screen-home'), quiz: $('screen-quiz'), result: $('screen-result') },
       unitGrid: $('unit-grid'),
       modeGrid: $('mode-grid'),
+      inputGrid: $('input-grid'),
+      keypad: $('keypad'),
+      keypadDisplay: $('keypad-display'),
+      keypadValue: $('keypad-value'),
+      keypadGrid: $('keypad-grid'),
       start: $('btn-start'),
       hudProgressValue: $('hud-progress-value'),
       hudCombo: $('hud-combo'),
@@ -895,6 +985,11 @@
         btn.classList.toggle('is-selected', selected);
         btn.setAttribute('aria-pressed', String(selected));
       });
+      dom.inputGrid.querySelectorAll('.mode-btn').forEach((btn) => {
+        const selected = btn.dataset.input === state.input;
+        btn.classList.toggle('is-selected', selected);
+        btn.setAttribute('aria-pressed', String(selected));
+      });
     };
 
     dom.unitGrid.addEventListener('click', (e) => {
@@ -908,6 +1003,13 @@
       const btn = e.target.closest('.mode-btn');
       if (!btn) { return; }
       state.mode = btn.dataset.mode;
+      syncHomeSelection();
+    });
+
+    dom.inputGrid.addEventListener('click', (e) => {
+      const btn = e.target.closest('.mode-btn');
+      if (!btn) { return; }
+      state.input = btn.dataset.input;
       syncHomeSelection();
     });
 
@@ -979,6 +1081,73 @@
       }
     };
 
+    /* ============================================================
+     * テンキー入力
+     * ============================================================ */
+    const KEYPAD_MAX_DIGITS = 2; // こたえは最大81なので2桁で十分
+
+    const updateKeypadDisplay = () => {
+      const isEmpty = state.keypadBuffer === '';
+      dom.keypadValue.textContent = isEmpty ? '?' : state.keypadBuffer;
+      dom.keypadValue.classList.toggle('is-empty', isEmpty);
+    };
+
+    const pressKey = (digit) => {
+      if (state.locked || state.keypadBuffer.length >= KEYPAD_MAX_DIGITS) { return; }
+      state.keypadBuffer += digit;
+      updateKeypadDisplay();
+    };
+
+    const clearKey = () => {
+      if (state.locked) { return; }
+      state.keypadBuffer = state.keypadBuffer.slice(0, -1);
+      updateKeypadDisplay();
+    };
+
+    const submitKeypad = () => {
+      if (state.locked || state.keypadBuffer === '') { return; }
+      answer(Number(state.keypadBuffer), dom.keypadDisplay);
+    };
+
+    const resetKeypad = () => {
+      state.keypadBuffer = '';
+      dom.keypadDisplay.classList.remove('is-correct', 'is-wrong');
+      dom.keypadGrid.querySelectorAll('.key-btn').forEach((btn) => { btn.disabled = false; });
+      updateKeypadDisplay();
+    };
+
+    const buildKeypad = () => {
+      const layout = [
+        { key: '1' }, { key: '2' }, { key: '3' },
+        { key: '4' }, { key: '5' }, { key: '6' },
+        { key: '7' }, { key: '8' }, { key: '9' },
+        { action: 'clear', label: 'けす' },
+        { key: '0' },
+        { action: 'submit', label: 'こたえる' },
+      ];
+      layout.forEach((item) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        if (item.key) {
+          btn.className = 'key-btn key-num';
+          btn.dataset.key = item.key;
+          btn.textContent = item.key;
+          btn.addEventListener('click', () => pressKey(item.key));
+        } else if (item.action === 'clear') {
+          btn.className = 'key-btn is-action';
+          btn.id = 'key-clear';
+          btn.textContent = item.label;
+          btn.addEventListener('click', clearKey);
+        } else {
+          btn.className = 'key-btn is-action is-submit';
+          btn.id = 'key-submit';
+          btn.textContent = item.label;
+          btn.addEventListener('click', submitKeypad);
+        }
+        dom.keypadGrid.appendChild(btn);
+      });
+    };
+
     const renderQuestion = (question) => {
       const meta = UNITS[question.type];
 
@@ -992,15 +1161,22 @@
         if (i < parts.length - 1) { dom.questionText.appendChild(document.createTextNode(' ')); }
       });
 
-      dom.choices.textContent = '';
-      buildChoices(question).forEach((value) => {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'choice-btn';
-        btn.textContent = value;
-        btn.addEventListener('click', () => answer(value, btn));
-        dom.choices.appendChild(btn);
-      });
+      const isKeypad = state.input === 'keypad';
+      dom.choices.hidden = isKeypad;
+      dom.keypad.hidden = !isKeypad;
+      if (isKeypad) {
+        resetKeypad();
+      } else {
+        dom.choices.textContent = '';
+        buildChoices(question).forEach((value) => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'choice-btn';
+          btn.textContent = value;
+          btn.addEventListener('click', () => answer(value, btn));
+          dom.choices.appendChild(btn);
+        });
+      }
     };
 
     const renderHud = () => {
@@ -1031,6 +1207,7 @@
 
     const disableChoices = () => {
       dom.choices.querySelectorAll('.choice-btn').forEach((btn) => { btn.disabled = true; });
+      dom.keypadGrid.querySelectorAll('.key-btn').forEach((btn) => { btn.disabled = true; });
     };
 
     const revealCorrectChoice = () => {
@@ -1184,6 +1361,7 @@
 
     /* 初期化 */
     syncHomeSelection();
+    buildKeypad();
   </script>
 </body>
 </html>
