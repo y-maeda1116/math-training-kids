@@ -1,0 +1,1189 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#fff8e1">
+  <meta name="description" content="小学生向け 1桁けいさんのれんしゅうアプリ。たしざん・ひきざん・かけざん・わりざんを4択クイズで!">
+  <title>さんすうトレーニング | 1桁けいさんれんしゅう</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    /* ============================================================
+     さんすうトレーニング — ポップ絵本スタイル
+     ============================================================ */
+    :root {
+      --ink: #3a3653;
+      --paper: #fffdf4;
+      --cream: #fff6d8;
+
+      --red: #ff5d5d;
+      --red-deep: #e8433f;
+      --blue: #3fa9f5;
+      --blue-deep: #1c82d4;
+      --green: #4cc38a;
+      --green-deep: #2ea472;
+      --yellow: #ffd23f;
+      --yellow-deep: #f5b301;
+      --pink: #ff87b3;
+      --orange: #ff9f43;
+      --purple: #9d7bd8;
+
+      --radius-lg: 26px;
+      --radius-md: 18px;
+      --outline: 3px solid var(--ink);
+      --drop: 0 6px 0 rgba(58, 54, 83, 0.9);
+
+      --font-round: "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    -webkit-tap-highlight-color: transparent;
+
+    body {
+      font-family: var(--font-round);
+      color: var(--ink);
+      min-height: 100dvh;
+      background:
+        radial-gradient(1100px 620px at 12% -8%, #d8f3ff 0%, rgba(216, 243, 255, 0) 60%),
+        radial-gradient(1000px 620px at 92% 4%, #ffe3ef 0%, rgba(255, 227, 239, 0) 58%),
+        radial-gradient(900px 700px at 50% 110%, #e2f8e6 0%, rgba(226, 248, 230, 0) 55%),
+        var(--cream);
+      display: flex;
+      justify-content: center;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* ---- 背景の浮遊する演算記号 ---- */
+    .bg-symbols {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+    .bg-symbols span {
+      position: absolute;
+      font-weight: 900;
+      color: rgba(58, 54, 83, 0.07);
+      user-select: none;
+      line-height: 1;
+      animation: floaty 9s ease-in-out infinite;
+    }
+    .bg-symbols span:nth-child(1)  { font-size: 9rem;   top: 4%;  left: -2rem; animation-duration: 10s; }
+    .bg-symbols span:nth-child(2)  { font-size: 7rem;   top: 62%; left: -1rem; animation-duration: 12s; animation-delay: -3s; }
+    .bg-symbols span:nth-child(3)  { font-size: 11rem;  top: 26%; right: -3rem; animation-duration: 11s; animation-delay: -5s; }
+    .bg-symbols span:nth-child(4)  { font-size: 6rem;   top: 78%; right: 4%;   animation-duration: 9s;  animation-delay: -2s; }
+    .bg-symbols span:nth-child(5)  { font-size: 5rem;   top: 8%;  right: 12%;  animation-duration: 13s; animation-delay: -7s; }
+    .bg-symbols span:nth-child(6)  { font-size: 8rem;   top: 40%; left: 4%;    animation-duration: 12s; animation-delay: -6s; }
+    .bg-symbols span:nth-child(7)  { font-size: 4.5rem; top: 88%; left: 16%;   animation-duration: 10s; animation-delay: -4s; }
+    .bg-symbols span:nth-child(8)  { font-size: 5.5rem; top: 14%; left: 14%;   animation-duration: 14s; animation-delay: -8s; }
+
+    @keyframes floaty {
+      0%, 100% { transform: translateY(0) rotate(-4deg); }
+      50%      { transform: translateY(-26px) rotate(5deg); }
+    }
+
+    /* ---- アプリの土台 ---- */
+    .app {
+      width: 100%;
+      max-width: 520px;
+      padding: clamp(16px, 4vw, 32px) clamp(12px, 3.5vw, 24px) 48px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .screen { display: none; animation: screen-in 0.35s cubic-bezier(0.22, 1, 0.36, 1); }
+    .screen.is-active { display: block; }
+
+    @keyframes screen-in {
+      from { opacity: 0; transform: translateY(14px) scale(0.985); }
+      to   { opacity: 1; transform: none; }
+    }
+
+    /* ---- ロゴ ---- */
+    .logo {
+      text-align: center;
+      font-weight: 900;
+      font-size: clamp(2.4rem, 9vw, 3.4rem);
+      letter-spacing: 0.06em;
+      line-height: 1.18;
+      margin-top: 8px;
+      text-shadow: 3px 3px 0 rgba(255, 255, 255, 0.9);
+    }
+    .logo .chr { display: inline-block; animation: logo-bounce 2.6s ease-in-out infinite; }
+    .logo .chr:nth-child(odd) { animation-delay: 0.15s; }
+    .logo .chr:nth-child(3n)  { animation-delay: 0.3s; }
+    .logo-sub {
+      text-align: center;
+      font-weight: 800;
+      font-size: clamp(0.82rem, 3vw, 0.95rem);
+      letter-spacing: 0.18em;
+      margin-top: 8px;
+      padding: 4px 14px;
+      display: table;
+      margin-inline: auto;
+      background: var(--ink);
+      color: var(--paper);
+      border-radius: 999px;
+    }
+    @keyframes logo-bounce {
+      0%, 100% { transform: translateY(0); }
+      50%      { transform: translateY(-5px); }
+    }
+
+    /* ---- カード ---- */
+    .card {
+      background: var(--paper);
+      border: var(--outline);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--drop);
+      padding: clamp(18px, 4.5vw, 28px);
+      margin-top: 20px;
+    }
+
+    .card-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: clamp(0.95rem, 3.4vw, 1.05rem);
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      margin: 22px 0 12px;
+    }
+    .card-title:first-child { margin-top: 0; }
+    .card-title::before,
+    .card-title::after {
+      content: "";
+      flex: 1;
+      height: 3px;
+      border-radius: 2px;
+      background: repeating-linear-gradient(90deg, var(--ink) 0 8px, transparent 8px 15px);
+      opacity: 0.25;
+    }
+    .card-title .step-num {
+      background: var(--yellow);
+      border: 2.5px solid var(--ink);
+      border-radius: 10px;
+      padding: 1px 9px;
+      font-size: 0.9em;
+      box-shadow: 2px 2px 0 rgba(58, 54, 83, 0.9);
+    }
+
+    /* ---- 単元グリッド ---- */
+    .unit-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+    .unit-grid .is-wide { grid-column: 1 / -1; }
+
+    .unit-btn {
+      font-family: inherit;
+      color: var(--ink);
+      background: var(--paper);
+      border: var(--outline);
+      border-radius: var(--radius-md);
+      box-shadow: var(--drop);
+      padding: 12px 8px 11px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.15s ease;
+    }
+    .unit-btn .unit-name {
+      font-size: clamp(1.15rem, 4.5vw, 1.3rem);
+      font-weight: 900;
+      letter-spacing: 0.05em;
+    }
+    .unit-btn .unit-ex {
+      font-size: clamp(0.78rem, 3vw, 0.85rem);
+      font-weight: 700;
+      opacity: 0.62;
+    }
+    .unit-btn:hover  { transform: translateY(-2px); box-shadow: 0 8px 0 rgba(58, 54, 83, 0.9); }
+    .unit-btn:active { transform: translateY(6px); box-shadow: 0 0 0 rgba(58, 54, 83, 0.9); }
+
+    .unit-btn[data-unit="add"].is-selected  { background: var(--red);    color: #fff; }
+    .unit-btn[data-unit="sub"].is-selected  { background: var(--blue);   color: #fff; }
+    .unit-btn[data-unit="mul"].is-selected  { background: var(--green);  color: #fff; }
+    .unit-btn[data-unit="div"].is-selected  { background: var(--orange); color: #fff; }
+    .unit-btn[data-unit="mix"].is-selected  { background: var(--purple); color: #fff; }
+    .unit-btn.is-selected .unit-ex { opacity: 0.85; }
+
+    /* ---- 形式グリッド ---- */
+    .mode-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+    .mode-btn {
+      font-family: inherit;
+      color: var(--ink);
+      background: var(--paper);
+      border: var(--outline);
+      border-radius: var(--radius-md);
+      box-shadow: var(--drop);
+      padding: 14px 8px 12px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.15s ease;
+    }
+    .mode-btn .mode-name {
+      font-size: clamp(0.98rem, 3.9vw, 1.12rem);
+      font-weight: 900;
+      letter-spacing: 0.03em;
+    }
+    .mode-btn .mode-desc {
+      font-size: clamp(0.74rem, 2.9vw, 0.82rem);
+      font-weight: 700;
+      opacity: 0.62;
+    }
+    .mode-btn:hover  { transform: translateY(-2px); box-shadow: 0 8px 0 rgba(58, 54, 83, 0.9); }
+    .mode-btn:active { transform: translateY(6px); box-shadow: 0 0 0 rgba(58, 54, 83, 0.9); }
+    .mode-btn.is-selected { background: var(--pink); color: #fff; }
+    .mode-btn.is-selected .mode-desc { opacity: 0.92; }
+
+    /* ---- スタートボタン ---- */
+    .btn-start {
+      font-family: inherit;
+      width: 100%;
+      margin-top: 24px;
+      font-size: clamp(1.5rem, 6vw, 1.8rem);
+      font-weight: 900;
+      letter-spacing: 0.12em;
+      color: #fff;
+      background: linear-gradient(180deg, #ff8a8a 0%, var(--red) 45%, var(--red-deep) 100%);
+      border: var(--outline);
+      border-radius: var(--radius-md);
+      box-shadow: var(--drop);
+      padding: 16px;
+      cursor: pointer;
+      transition: transform 0.08s ease, box-shadow 0.08s ease;
+      animation: start-pulse 1.8s ease-in-out infinite;
+    }
+    .btn-start:hover  { transform: translateY(-2px) scale(1.01); box-shadow: 0 8px 0 rgba(58, 54, 83, 0.9); }
+    .btn-start:active { transform: translateY(6px); box-shadow: 0 0 0 rgba(58, 54, 83, 0.9); animation: none; }
+    @keyframes start-pulse {
+      0%, 100% { box-shadow: var(--drop); }
+      50%      { box-shadow: var(--drop), 0 0 0 7px rgba(255, 93, 93, 0.22); }
+    }
+
+    /* ============================================================
+     クイズ画面
+     ============================================================ */
+    .quiz-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+    .hud-chip {
+      background: var(--paper);
+      border: var(--outline);
+      border-radius: 14px;
+      box-shadow: 0 4px 0 rgba(58, 54, 83, 0.9);
+      padding: 5px 13px;
+      font-weight: 900;
+      font-size: clamp(0.85rem, 3.2vw, 0.98rem);
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+    .hud-chip .hud-label { font-size: 0.72em; font-weight: 800; opacity: 0.6; margin-right: 4px; letter-spacing: 0.06em; }
+    .hud-chip.is-combo { animation: combo-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1); }
+    @keyframes combo-pop {
+      0%   { transform: scale(0.6); }
+      70%  { transform: scale(1.15); }
+      100% { transform: scale(1); }
+    }
+    .hud-chip[hidden] { display: none; }
+
+    .question-card {
+      background: var(--paper);
+      border: var(--outline);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--drop);
+      margin-top: 16px;
+      padding: clamp(26px, 7vw, 44px) 16px clamp(30px, 7.5vw, 46px);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .question-card::after {
+      content: "";
+      position: absolute;
+      inset: 6px;
+      border: 2.5px dashed rgba(58, 54, 83, 0.18);
+      border-radius: calc(var(--radius-lg) - 7px);
+      pointer-events: none;
+    }
+    .question-unit {
+      display: inline-block;
+      font-size: clamp(0.8rem, 3vw, 0.92rem);
+      font-weight: 900;
+      letter-spacing: 0.14em;
+      color: #fff;
+      padding: 3px 14px;
+      border-radius: 999px;
+      border: 2.5px solid var(--ink);
+      box-shadow: 2px 2px 0 rgba(58, 54, 83, 0.9);
+      margin-bottom: 10px;
+    }
+    .question-text {
+      font-size: clamp(3.2rem, 17vw, 5.2rem);
+      font-weight: 900;
+      letter-spacing: 0.06em;
+      line-height: 1.1;
+      font-variant-numeric: tabular-nums;
+    }
+    .question-text .op { display: inline-block; transform: translateY(-0.04em); margin: 0 0.04em; }
+    .op-add  { color: var(--red-deep); }
+    .op-sub  { color: var(--blue-deep); }
+    .op-mul  { color: var(--green-deep); }
+    .op-div  { color: var(--orange); }
+    .question-text .eq { opacity: 0.4; }
+
+    .question-card.is-correct { animation: flash-green 0.45s ease; }
+    .question-card.is-wrong   { animation: flash-red 0.45s ease; }
+    @keyframes flash-green {
+      0%   { background: #d3f6e3; }
+      100% { background: var(--paper); }
+    }
+    @keyframes flash-red {
+      0%   { background: #ffe0e0; }
+      100% { background: var(--paper); }
+    }
+
+    /* ---- 4択ボタン ---- */
+    .choices {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+      margin-top: 20px;
+    }
+    .choice-btn {
+      font-family: inherit;
+      color: #fff;
+      border: var(--outline);
+      border-radius: var(--radius-md);
+      box-shadow: var(--drop);
+      font-size: clamp(2.2rem, 10vw, 3rem);
+      font-weight: 900;
+      padding: clamp(14px, 4vw, 22px) 8px;
+      cursor: pointer;
+      font-variant-numeric: tabular-nums;
+      transition: transform 0.08s ease, box-shadow 0.08s ease, opacity 0.2s ease;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    .choice-btn:nth-child(1) { background: linear-gradient(180deg, #ff8080, var(--red-deep)); }
+    .choice-btn:nth-child(2) { background: linear-gradient(180deg, #6ec1ff, var(--blue-deep)); }
+    .choice-btn:nth-child(3) { background: linear-gradient(180deg, #79d6a6, var(--green-deep)); }
+    .choice-btn:nth-child(4) { background: linear-gradient(180deg, #ffdd66, var(--yellow-deep)); color: var(--ink); }
+
+    .choice-btn:hover:not(:disabled)  { transform: translateY(-2px); box-shadow: 0 8px 0 rgba(58, 54, 83, 0.9); }
+    .choice-btn:active:not(:disabled) { transform: translateY(6px); box-shadow: 0 0 0 rgba(58, 54, 83, 0.9); }
+    .choice-btn:disabled { cursor: default; }
+
+    .choice-btn.is-correct {
+      background: linear-gradient(180deg, #6fe0a0, var(--green-deep)) !important;
+      color: #fff !important;
+      animation: correct-bounce 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .choice-btn.is-wrong {
+      background: linear-gradient(180deg, #b3b3b3, #8c8c8c) !important;
+      color: #fff !important;
+      animation: wrong-drop 0.4s ease;
+    }
+    .choice-btn.is-reveal { outline: 6px solid var(--green); outline-offset: 3px; }
+    .choice-btn:not(.is-correct):not(.is-wrong):disabled { opacity: 0.45; }
+
+    @keyframes correct-bounce {
+      0%   { transform: scale(1); }
+      45%  { transform: scale(1.12); }
+      100% { transform: scale(1); }
+    }
+    @keyframes wrong-drop {
+      0%   { transform: translateY(0); }
+      40%  { transform: translateY(7px); }
+      100% { transform: translateY(0); }
+    }
+
+    /* ---- フィードバック ---- */
+    .feedback {
+      min-height: 3.4em;
+      margin-top: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    .feedback-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-size: clamp(1.3rem, 5.5vw, 1.7rem);
+      font-weight: 900;
+      letter-spacing: 0.06em;
+      border: var(--outline);
+      border-radius: 999px;
+      box-shadow: 0 5px 0 rgba(58, 54, 83, 0.9);
+      padding: 8px 26px;
+      background: var(--paper);
+      animation: badge-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .feedback-badge .fb-emoji { font-size: 1.25em; }
+    .feedback-badge.is-good { background: #d3f6e3; }
+    .feedback-badge.is-bad  { background: #ffe0e0; }
+    .feedback-badge .fb-answer { font-variant-numeric: tabular-nums; }
+    @keyframes badge-in {
+      0%   { transform: scale(0.4) rotate(-6deg); opacity: 0; }
+      70%  { transform: scale(1.08) rotate(1deg); }
+      100% { transform: scale(1) rotate(0); opacity: 1; }
+    }
+
+    /* ---- コンボマイルストーン演出 ---- */
+    .combo-celebration {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      z-index: 40;
+    }
+    .combo-celebration[hidden] { display: none; }
+    .combo-celebration .combo-text {
+      font-size: clamp(2.4rem, 12vw, 4rem);
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      color: #fff;
+      background: var(--purple);
+      border: 4px solid var(--ink);
+      border-radius: 22px;
+      box-shadow: 0 8px 0 rgba(58, 54, 83, 0.9);
+      padding: 14px 36px;
+      animation: celebrate 1.15s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      white-space: nowrap;
+    }
+    @keyframes celebrate {
+      0%   { transform: scale(0.2) rotate(-10deg); opacity: 0; }
+      25%  { transform: scale(1.15) rotate(3deg); opacity: 1; }
+      45%  { transform: scale(1) rotate(0); }
+      80%  { transform: scale(1.02); opacity: 1; }
+      100% { transform: scale(0.9) translateY(-30px); opacity: 0; }
+    }
+
+    /* ---- 画面シェイク ---- */
+    body.shake { animation: shake 0.45s ease; }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      15%  { transform: translateX(-11px) rotate(-0.5deg); }
+      35%  { transform: translateX(10px) rotate(0.5deg); }
+      55%  { transform: translateX(-7px); }
+      75%  { transform: translateX(5px); }
+      90%  { transform: translateX(-2px); }
+    }
+
+    /* ---- おわるボタン ---- */
+    .btn-quit {
+      font-family: inherit;
+      display: block;
+      margin: 22px auto 0;
+      font-size: 0.92rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      color: var(--ink);
+      background: transparent;
+      border: 2.5px solid rgba(58, 54, 83, 0.4);
+      border-radius: 999px;
+      padding: 7px 26px;
+      cursor: pointer;
+      opacity: 0.75;
+      transition: opacity 0.15s ease, background 0.15s ease;
+    }
+    .btn-quit:hover { opacity: 1; background: rgba(255, 255, 255, 0.7); }
+
+    /* ============================================================
+     リザルト画面
+     ============================================================ */
+    .result-card {
+      text-align: center;
+      padding-top: clamp(26px, 6vw, 36px);
+    }
+    .result-crown {
+      font-size: clamp(3rem, 13vw, 4.2rem);
+      line-height: 1;
+      animation: crown-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s backwards;
+    }
+    @keyframes crown-in {
+      from { transform: scale(0) rotate(-20deg); }
+      to   { transform: scale(1) rotate(0); }
+    }
+    .result-message {
+      font-size: clamp(1.7rem, 7.5vw, 2.3rem);
+      font-weight: 900;
+      letter-spacing: 0.06em;
+      margin-top: 8px;
+      animation: screen-in 0.4s ease 0.25s backwards;
+    }
+    .result-message.tone-gold   { color: var(--yellow-deep); }
+    .result-message.tone-silver { color: var(--blue-deep); }
+    .result-message.tone-bronze { color: var(--orange); }
+
+    .result-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 24px;
+    }
+    .result-stats.has-2 { grid-template-columns: repeat(2, 1fr); }
+    .stat-box {
+      background: var(--cream);
+      border: 2.5px solid var(--ink);
+      border-radius: var(--radius-md);
+      box-shadow: 0 4px 0 rgba(58, 54, 83, 0.9);
+      padding: 12px 6px 10px;
+    }
+    .stat-box .stat-label {
+      font-size: clamp(0.72rem, 2.8vw, 0.8rem);
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      opacity: 0.65;
+    }
+    .stat-box .stat-value {
+      font-size: clamp(1.5rem, 6.5vw, 2rem);
+      font-weight: 900;
+      margin-top: 2px;
+      font-variant-numeric: tabular-nums;
+    }
+    .stat-box .stat-value .stat-unit { font-size: 0.55em; font-weight: 800; margin-left: 1px; }
+
+    .result-actions {
+      display: grid;
+      gap: 14px;
+      margin-top: 26px;
+    }
+    .btn-again {
+      font-family: inherit;
+      font-size: clamp(1.25rem, 5vw, 1.5rem);
+      font-weight: 900;
+      letter-spacing: 0.1em;
+      color: #fff;
+      background: linear-gradient(180deg, #79d6a6, var(--green-deep));
+      border: var(--outline);
+      border-radius: var(--radius-md);
+      box-shadow: var(--drop);
+      padding: 14px;
+      cursor: pointer;
+      transition: transform 0.08s ease, box-shadow 0.08s ease;
+    }
+    .btn-home {
+      font-family: inherit;
+      font-size: clamp(0.95rem, 4vw, 1.05rem);
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      color: var(--ink);
+      background: var(--paper);
+      border: var(--outline);
+      border-radius: var(--radius-md);
+      box-shadow: var(--drop);
+      padding: 11px;
+      cursor: pointer;
+      transition: transform 0.08s ease, box-shadow 0.08s ease;
+    }
+    .btn-again:hover, .btn-home:hover   { transform: translateY(-2px); box-shadow: 0 8px 0 rgba(58, 54, 83, 0.9); }
+    .btn-again:active, .btn-home:active { transform: translateY(6px); box-shadow: 0 0 0 rgba(58, 54, 83, 0.9); }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="bg-symbols" aria-hidden="true">
+    <span>+</span><span>−</span><span>×</span><span>÷</span>
+    <span>=</span><span>?</span><span>★</span><span>+</span>
+  </div>
+
+  <main class="app">
+
+    <!-- ========== ホーム（モード選択） ========== -->
+    <section id="screen-home" class="screen is-active" aria-label="モードせんたく">
+      <h1 class="logo" aria-label="さんすうトレーニング">
+        <span class="chr" style="color:var(--red-deep)">さ</span><span class="chr" style="color:var(--orange)">ん</span><span class="chr" style="color:var(--yellow-deep)">す</span><span class="chr" style="color:var(--green-deep)">う</span>
+        <br>
+        <span class="chr" style="color:var(--blue-deep)">ト</span><span class="chr" style="color:var(--purple)">レ</span><span class="chr" style="color:var(--pink)">ー</span><span class="chr" style="color:var(--red-deep)">ニ</span><span class="chr" style="color:var(--orange)">ン</span><span class="chr" style="color:var(--blue-deep)">グ</span>
+      </h1>
+      <p class="logo-sub">1桁(ひとけた)けいさんのれんしゅう</p>
+
+      <div class="card">
+        <h2 class="card-title"><span class="step-num">1</span>たんごをえらぶ</h2>
+        <div class="unit-grid" id="unit-grid">
+          <button type="button" class="unit-btn" data-unit="add" aria-pressed="false">
+            <span class="unit-name">たしざん</span><span class="unit-ex">3 + 5</span>
+          </button>
+          <button type="button" class="unit-btn" data-unit="sub" aria-pressed="false">
+            <span class="unit-name">ひきざん</span><span class="unit-ex">8 − 2</span>
+          </button>
+          <button type="button" class="unit-btn" data-unit="mul" aria-pressed="false">
+            <span class="unit-name">かけざん</span><span class="unit-ex">4 × 7</span>
+          </button>
+          <button type="button" class="unit-btn" data-unit="div" aria-pressed="false">
+            <span class="unit-name">わりざん</span><span class="unit-ex">6 ÷ 2</span>
+          </button>
+          <button type="button" class="unit-btn is-wide" data-unit="mix" aria-pressed="false">
+            <span class="unit-name">★ ミックス</span><span class="unit-ex">ぜんぶ まざりくみ</span>
+          </button>
+        </div>
+
+        <h2 class="card-title"><span class="step-num">2</span>ほうしきをえらぶ</h2>
+        <div class="mode-grid" id="mode-grid">
+          <button type="button" class="mode-btn" data-mode="ta" aria-pressed="false">
+            <span class="mode-name">⏱ 10問タイムアタック</span><span class="mode-desc">10もん はやく とける？</span>
+          </button>
+          <button type="button" class="mode-btn" data-mode="endless" aria-pressed="false">
+            <span class="mode-name">🔁 エンドレス</span><span class="mode-desc">まちがえるまで つづく！</span>
+          </button>
+        </div>
+
+        <button type="button" id="btn-start" class="btn-start">スタート！</button>
+      </div>
+    </section>
+
+    <!-- ========== クイズ ========== -->
+    <section id="screen-quiz" class="screen" aria-label="もんだい">
+      <div class="quiz-header">
+        <div class="hud-chip" id="hud-progress"><span class="hud-label">もんだい</span><span id="hud-progress-value">1/10</span></div>
+        <div class="hud-chip is-combo" id="hud-combo" hidden>⚡<span id="hud-combo-value">2</span>れんぞく</div>
+        <div class="hud-chip" id="hud-score"><span class="hud-label">せいかい</span><span id="hud-score-value">0</span></div>
+        <div class="hud-chip" id="hud-timer"><span class="hud-label">タイム</span><span id="hud-timer-value">0.0</span></div>
+      </div>
+
+      <div class="question-card" id="question-card">
+        <span class="question-unit" id="question-unit">たしざん</span>
+        <p class="question-text" id="question-text"></p>
+      </div>
+
+      <div class="choices" id="choices"></div>
+
+      <div class="feedback" role="status" aria-live="assertive" id="feedback"></div>
+
+      <button type="button" id="btn-quit" class="btn-quit">おわる</button>
+    </section>
+
+    <!-- ========== リザルト ========== -->
+    <section id="screen-result" class="screen" aria-label="けっか">
+      <div class="card result-card">
+        <div class="result-crown" id="result-emoji">🏆</div>
+        <p class="result-message" id="result-message">おみごと！</p>
+
+        <div class="result-stats" id="result-stats"></div>
+
+        <div class="result-actions">
+          <button type="button" id="btn-again" class="btn-again">もういちど！</button>
+          <button type="button" id="btn-home" class="btn-home">モードをえらぶ</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <div class="combo-celebration" id="combo-celebration" hidden>
+    <div class="combo-text" id="combo-celebration-text">5れんぞく！✨</div>
+  </div>
+
+  <script>
+    'use strict';
+
+    /* ============================================================
+     * ユーティリティ（純粋関数）
+     * ============================================================ */
+    const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+
+    const shuffle = (arr) => {
+      const copy = [...arr];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    };
+
+    /* ============================================================
+     * 定数
+     * ============================================================ */
+    const UNITS = {
+      add: { label: 'たしざん', op: '+' },
+      sub: { label: 'ひきざん', op: '−' },
+      mul: { label: 'かけざん', op: '×' },
+      div: { label: 'わりざん', op: '÷' },
+    };
+    const UNIT_COLORS = { add: 'var(--red-deep)', sub: 'var(--blue-deep)', mul: 'var(--green-deep)', div: 'var(--orange)' };
+    const UNIT_KEYS = ['add', 'sub', 'mul', 'div'];
+    const TA_TOTAL = 10;
+    const COMBO_MILESTONE = 5;
+    const DELAY_AFTER_CORRECT_MS = 700;
+    const DELAY_AFTER_WRONG_MS = 1500;
+
+    /* ============================================================
+     * 問題生成（純粋関数）
+     * ============================================================ */
+
+    /** たしざん: 1桁 + 1桁 */
+    const makeAdd = () => {
+      const a = randInt(1, 9);
+      const b = randInt(1, 9);
+      return { type: 'add', a, b, answer: a + b, dummies: [a + b + 1, a + b - 1, a * b] };
+    };
+
+    /** ひきざん: 大 − 小（こたえはマイナスにならない） */
+    const makeSub = () => {
+      let a = randInt(1, 9);
+      let b = randInt(1, 9);
+      if (b > a) { [a, b] = [b, a]; }
+      return { type: 'sub', a, b, answer: a - b, dummies: [a + b, a - b + 1, a - b - 1] };
+    };
+
+    /** かけざん: 九九 */
+    const makeMul = () => {
+      const a = randInt(1, 9);
+      const b = randInt(1, 9);
+      return { type: 'mul', a, b, answer: a * b, dummies: [a + b, a * (b + 1), a * b - a] };
+    };
+
+    /** わりざん: 割り切れる問題のみ（わる数は1桁・あまりなし） */
+    const makeDiv = () => {
+      const divisor = randInt(2, 9); // わる数（1桁）
+      const quotient = randInt(1, 9); // こたえ（商）
+      return { type: 'div', a: divisor * quotient, b: divisor, answer: quotient, dummies: [divisor, quotient + 1, quotient - 1] };
+    };
+
+    const GENERATORS = { add: makeAdd, sub: makeSub, mul: makeMul, div: makeDiv };
+
+    /** 指定たんごの問題を1つ生成（ミックスは4たんごからランダム） */
+    const generateQuestion = (unit) => {
+      const type = unit === 'mix' ? UNIT_KEYS[randInt(0, UNIT_KEYS.length - 1)] : unit;
+      return GENERATORS[type]();
+    };
+
+    /** 正解1つ + まちがえやすいダミー3つ = 4択をシャッフルして返す */
+    const buildChoices = (question) => {
+      const { answer } = question;
+      const candidates = [...question.dummies, answer + 1, answer - 1, answer + 2, answer - 2, answer + 10, answer - 10];
+      const picked = [];
+      for (const value of shuffle(candidates)) {
+        const isValid = Number.isInteger(value) && value >= 0 && value !== answer && !picked.includes(value);
+        if (isValid) {
+          picked.push(value);
+          if (picked.length === 3) { break; }
+        }
+      }
+      let extra = 3;
+      while (picked.length < 3) {
+        const value = answer + extra;
+        if (!picked.includes(value)) { picked.push(value); }
+        extra += 1;
+      }
+      return shuffle([answer, ...picked]);
+    };
+
+    /* ============================================================
+     * ランク評価（純粋関数）
+     * ============================================================ */
+    const evaluateTaRank = (correct, seconds) => {
+      if (correct === TA_TOTAL && seconds <= 20) { return { emoji: '⚡', text: 'はやすぎ！ゴールド', tone: 'gold' }; }
+      if (correct === TA_TOTAL && seconds <= 35) { return { emoji: '🏆', text: 'はやい！パーフェクト', tone: 'gold' }; }
+      if (correct === TA_TOTAL) { return { emoji: '✨', text: 'パーフェクト！', tone: 'gold' }; }
+      if (correct >= 8) { return { emoji: '🌟', text: 'おみごと！', tone: 'silver' }; }
+      if (correct >= 6) { return { emoji: '😊', text: 'いいちょうし！', tone: 'silver' }; }
+      return { emoji: '💪', text: 'がんばった！', tone: 'bronze' };
+    };
+
+    const evaluateEndlessRank = (correct) => {
+      if (correct >= 30) { return { emoji: '👑', text: 'さんすうキング！', tone: 'gold' }; }
+      if (correct >= 20) { return { emoji: '🏆', text: 'すごい！マスター！', tone: 'gold' }; }
+      if (correct >= 10) { return { emoji: '🌟', text: 'たのもしい！', tone: 'gold' }; }
+      if (correct >= 5)  { return { emoji: '😊', text: 'いいちょうし！', tone: 'silver' }; }
+      if (correct >= 1)  { return { emoji: '💪', text: 'がんばった！', tone: 'bronze' }; }
+      return { emoji: '🌱', text: 'つぎも がんばろう！', tone: 'bronze' };
+    };
+
+    /* ============================================================
+     * 状態
+     * ============================================================ */
+    const state = {
+      unit: 'add',
+      mode: 'ta',
+      index: 0,
+      correct: 0,
+      combo: 0,
+      maxCombo: 0,
+      startTime: 0,
+      endTime: 0,
+      timerId: null,
+      locked: false,
+      current: null,
+    };
+
+    /* ============================================================
+     * DOM 参照
+     * ============================================================ */
+    const $ = (id) => document.getElementById(id);
+    const dom = {
+      screens: { home: $('screen-home'), quiz: $('screen-quiz'), result: $('screen-result') },
+      unitGrid: $('unit-grid'),
+      modeGrid: $('mode-grid'),
+      start: $('btn-start'),
+      hudProgressValue: $('hud-progress-value'),
+      hudCombo: $('hud-combo'),
+      hudComboValue: $('hud-combo-value'),
+      hudScoreValue: $('hud-score-value'),
+      hudTimer: $('hud-timer'),
+      hudTimerValue: $('hud-timer-value'),
+      questionCard: $('question-card'),
+      questionUnit: $('question-unit'),
+      questionText: $('question-text'),
+      choices: $('choices'),
+      feedback: $('feedback'),
+      quit: $('btn-quit'),
+      resultEmoji: $('result-emoji'),
+      resultMessage: $('result-message'),
+      resultStats: $('result-stats'),
+      again: $('btn-again'),
+      home: $('btn-home'),
+      comboCelebration: $('combo-celebration'),
+      comboCelebrationText: $('combo-celebration-text'),
+    };
+
+    /* ============================================================
+     * 画面切替
+     * ============================================================ */
+    const showScreen = (name) => {
+      Object.entries(dom.screens).forEach(([key, el]) => {
+        el.classList.toggle('is-active', key === name);
+      });
+      window.scrollTo({ top: 0 });
+    };
+
+    /* ============================================================
+     * ホーム: 選択状態
+     * ============================================================ */
+    const syncHomeSelection = () => {
+      dom.unitGrid.querySelectorAll('.unit-btn').forEach((btn) => {
+        const selected = btn.dataset.unit === state.unit;
+        btn.classList.toggle('is-selected', selected);
+        btn.setAttribute('aria-pressed', String(selected));
+      });
+      dom.modeGrid.querySelectorAll('.mode-btn').forEach((btn) => {
+        const selected = btn.dataset.mode === state.mode;
+        btn.classList.toggle('is-selected', selected);
+        btn.setAttribute('aria-pressed', String(selected));
+      });
+    };
+
+    dom.unitGrid.addEventListener('click', (e) => {
+      const btn = e.target.closest('.unit-btn');
+      if (!btn) { return; }
+      state.unit = btn.dataset.unit;
+      syncHomeSelection();
+    });
+
+    dom.modeGrid.addEventListener('click', (e) => {
+      const btn = e.target.closest('.mode-btn');
+      if (!btn) { return; }
+      state.mode = btn.dataset.mode;
+      syncHomeSelection();
+    });
+
+    /* ============================================================
+     * タイマー
+     * ============================================================ */
+    const getElapsedSeconds = () => ((state.endTime || performance.now()) - state.startTime) / 1000;
+
+    const startTimer = () => {
+      if (state.mode !== 'ta') { return; }
+      dom.hudTimerValue.textContent = '0.0';
+      state.timerId = window.setInterval(() => {
+        dom.hudTimerValue.textContent = getElapsedSeconds().toFixed(1);
+      }, 100);
+    };
+
+    const stopTimer = () => {
+      if (state.timerId !== null) {
+        window.clearInterval(state.timerId);
+        state.timerId = null;
+      }
+    };
+
+    /* ============================================================
+     * ゲーム進行
+     * ============================================================ */
+    const startGame = () => {
+      state.index = 0;
+      state.correct = 0;
+      state.combo = 0;
+      state.maxCombo = 0;
+      state.startTime = performance.now();
+      state.endTime = 0;
+      state.locked = false;
+      state.current = null;
+
+      dom.hudTimer.hidden = state.mode !== 'ta';
+      dom.hudCombo.hidden = true;
+      dom.hudScoreValue.textContent = '0';
+      dom.feedback.textContent = '';
+      document.body.classList.remove('shake');
+
+      showScreen('quiz');
+      startTimer();
+      nextQuestion();
+    };
+
+    const nextQuestion = () => {
+      state.locked = false;
+      state.current = generateQuestion(state.unit);
+      state.index += 1;
+      renderQuestion(state.current);
+      renderHud();
+    };
+
+    const appendQuestionPart = (part, meta) => {
+      if (part === '=') {
+        const eq = document.createElement('span');
+        eq.className = 'eq';
+        eq.textContent = '=';
+        dom.questionText.appendChild(eq);
+      } else if (Object.values(UNITS).some((u) => u.op === part)) {
+        const op = document.createElement('span');
+        op.className = `op op-${state.current.type}`;
+        op.textContent = part;
+        dom.questionText.appendChild(op);
+      } else {
+        dom.questionText.appendChild(document.createTextNode(part));
+      }
+    };
+
+    const renderQuestion = (question) => {
+      const meta = UNITS[question.type];
+
+      dom.questionUnit.textContent = meta.label;
+      dom.questionUnit.style.background = UNIT_COLORS[question.type];
+
+      dom.questionText.textContent = '';
+      const parts = [String(question.a), meta.op, String(question.b), '='];
+      parts.forEach((part, i) => {
+        appendQuestionPart(part, meta);
+        if (i < parts.length - 1) { dom.questionText.appendChild(document.createTextNode(' ')); }
+      });
+
+      dom.choices.textContent = '';
+      buildChoices(question).forEach((value) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'choice-btn';
+        btn.textContent = value;
+        btn.addEventListener('click', () => answer(value, btn));
+        dom.choices.appendChild(btn);
+      });
+    };
+
+    const renderHud = () => {
+      const isTa = state.mode === 'ta';
+      dom.hudProgressValue.textContent = isTa ? `${Math.min(state.index, TA_TOTAL)}/${TA_TOTAL}` : String(state.index);
+      dom.hudScoreValue.textContent = String(state.correct);
+      if (state.combo >= 2) {
+        dom.hudCombo.hidden = false;
+        dom.hudComboValue.textContent = String(state.combo);
+        dom.hudCombo.classList.remove('is-combo');
+        void dom.hudCombo.offsetWidth; // アニメーションやり直し
+        dom.hudCombo.classList.add('is-combo');
+      } else {
+        dom.hudCombo.hidden = true;
+      }
+    };
+
+    const answer = (value, btn) => {
+      if (state.locked || !state.current) { return; }
+      state.locked = true;
+      disableChoices();
+      if (value === state.current.answer) {
+        handleCorrect(btn);
+      } else {
+        handleWrong(btn);
+      }
+    };
+
+    const disableChoices = () => {
+      dom.choices.querySelectorAll('.choice-btn').forEach((btn) => { btn.disabled = true; });
+    };
+
+    const revealCorrectChoice = () => {
+      dom.choices.querySelectorAll('.choice-btn').forEach((btn) => {
+        if (Number(btn.textContent) === state.current.answer) {
+          btn.classList.add('is-reveal', 'is-correct');
+        }
+      });
+    };
+
+    const showFeedback = (emoji, text, isGood) => {
+      const badge = document.createElement('span');
+      badge.className = `feedback-badge ${isGood ? 'is-good' : 'is-bad'}`;
+      const emojiEl = document.createElement('span');
+      emojiEl.className = 'fb-emoji';
+      emojiEl.textContent = emoji;
+      const textEl = document.createElement('span');
+      textEl.textContent = text;
+      badge.append(emojiEl, textEl);
+      dom.feedback.textContent = '';
+      dom.feedback.appendChild(badge);
+    };
+
+    const celebrateCombo = () => {
+      dom.comboCelebrationText.textContent = `${state.combo}れんぞく！✨`;
+      dom.comboCelebration.hidden = false;
+      window.setTimeout(() => { dom.comboCelebration.hidden = true; }, 1150);
+    };
+
+    const shakeScreen = () => {
+      document.body.classList.remove('shake');
+      void document.body.offsetWidth; // アニメーションやり直し
+      document.body.classList.add('shake');
+    };
+
+    const handleCorrect = (btn) => {
+      state.correct += 1;
+      state.combo += 1;
+      state.maxCombo = Math.max(state.maxCombo, state.combo);
+
+      btn.classList.add('is-correct');
+      dom.questionCard.classList.remove('is-wrong');
+      dom.questionCard.classList.add('is-correct');
+      showFeedback('⭕', 'せいかい！', true);
+      renderHud();
+
+      if (state.combo >= COMBO_MILESTONE && state.combo % COMBO_MILESTONE === 0) {
+        celebrateCombo();
+      }
+
+      const isTaFinal = state.mode === 'ta' && state.index >= TA_TOTAL;
+      if (isTaFinal) {
+        state.endTime = performance.now();
+        stopTimer();
+        window.setTimeout(() => finishGame('completed'), DELAY_AFTER_CORRECT_MS);
+      } else {
+        window.setTimeout(() => nextQuestion(), DELAY_AFTER_CORRECT_MS);
+      }
+    };
+
+    const handleWrong = (btn) => {
+      state.combo = 0;
+
+      btn.classList.add('is-wrong');
+      revealCorrectChoice();
+      dom.questionCard.classList.remove('is-correct');
+      dom.questionCard.classList.add('is-wrong');
+      showFeedback('❌', `ざんねん… こたえは ${state.current.answer}`, false);
+      shakeScreen();
+      renderHud();
+
+      const isTaFinal = state.mode === 'ta' && state.index >= TA_TOTAL;
+      if (isTaFinal) {
+        state.endTime = performance.now();
+        stopTimer();
+        window.setTimeout(() => finishGame('completed'), DELAY_AFTER_WRONG_MS);
+      } else if (state.mode === 'endless') {
+        window.setTimeout(() => finishGame('mistake'), DELAY_AFTER_WRONG_MS);
+      } else {
+        window.setTimeout(() => nextQuestion(), DELAY_AFTER_WRONG_MS);
+      }
+    };
+
+    /* ============================================================
+     * 終了・リザルト
+     * ============================================================ */
+    const finishGame = (reason) => {
+      if (state.mode === 'ta' && !state.endTime) {
+        state.endTime = performance.now();
+      }
+      stopTimer();
+      renderResult(reason);
+      showScreen('result');
+    };
+
+    const buildStatBox = (label, value, unit) => {
+      const box = document.createElement('div');
+      box.className = 'stat-box';
+      const labelEl = document.createElement('div');
+      labelEl.className = 'stat-label';
+      labelEl.textContent = label;
+      const valueEl = document.createElement('div');
+      valueEl.className = 'stat-value';
+      valueEl.textContent = value;
+      if (unit) {
+        const unitEl = document.createElement('span');
+        unitEl.className = 'stat-unit';
+        unitEl.textContent = unit;
+        valueEl.appendChild(unitEl);
+      }
+      box.append(labelEl, valueEl);
+      return box;
+    };
+
+    const renderResult = (reason) => {
+      const isTa = state.mode === 'ta';
+      const seconds = isTa ? getElapsedSeconds() : 0;
+      const rank = isTa
+        ? evaluateTaRank(state.correct, seconds)
+        : evaluateEndlessRank(state.correct);
+
+      dom.resultEmoji.textContent = rank.emoji;
+      dom.resultMessage.textContent =
+        reason === 'quit' && state.index <= 1 ? 'またちょうせんしよう！' : rank.text;
+      dom.resultMessage.className = `result-message tone-${rank.tone}`;
+
+      dom.resultStats.textContent = '';
+      if (isTa) {
+        dom.resultStats.classList.remove('has-2');
+        dom.resultStats.append(
+          buildStatBox('タイム', seconds.toFixed(1), 'びょう'),
+          buildStatBox('せいかい', `${state.correct}/${TA_TOTAL}`, null),
+          buildStatBox('れんぞく', String(state.maxCombo), 'かい'),
+        );
+      } else {
+        dom.resultStats.classList.add('has-2');
+        dom.resultStats.append(
+          buildStatBox('せいかい', String(state.correct), 'もん'),
+          buildStatBox('さいこうれんぞく', String(state.maxCombo), 'かい'),
+        );
+      }
+    };
+
+    /* ============================================================
+     * イベント
+     * ============================================================ */
+    dom.start.addEventListener('click', startGame);
+    dom.again.addEventListener('click', startGame);
+    dom.home.addEventListener('click', () => showScreen('home'));
+    dom.quit.addEventListener('click', () => finishGame('quit'));
+
+    /* 初期化 */
+    syncHomeSelection();
+  </script>
+</body>
+</html>
