@@ -243,6 +243,7 @@ const stopTimer = () => {
  * ゲーム進行
  * ============================================================ */
 const startGame = () => {
+  stopTimer();
   state.index = 0;
   state.correct = 0;
   state.combo = 0;
