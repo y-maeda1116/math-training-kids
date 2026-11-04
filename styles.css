@@ -15,6 +15,7 @@
   --yellow: #ffd23f;
   --yellow-deep: #f5b301;
   --pink: #ff87b3;
+  --pink-deep: #e05c8f;
   --orange: #ff9f43;
   --purple: #9d7bd8;
 
@@ -195,6 +196,7 @@ body {
 .unit-btn:hover  { transform: translateY(-2px); box-shadow: 0 8px 0 rgba(58, 54, 83, 0.9); }
 .unit-btn:active { transform: translateY(6px); box-shadow: 0 0 0 rgba(58, 54, 83, 0.9); }
 
+.unit-btn[data-unit="addEasy"].is-selected { background: var(--pink); color: #fff; }
 .unit-btn[data-unit="add"].is-selected  { background: var(--red);    color: #fff; }
 .unit-btn[data-unit="sub"].is-selected  { background: var(--blue);   color: #fff; }
 .unit-btn[data-unit="mul"].is-selected  { background: var(--green);  color: #fff; }
@@ -335,6 +337,7 @@ body {
   font-variant-numeric: tabular-nums;
 }
 .question-text .op { display: inline-block; transform: translateY(-0.04em); margin: 0 0.04em; }
+.op-addEasy { color: var(--pink-deep); }
 .op-add  { color: var(--red-deep); }
 .op-sub  { color: var(--blue-deep); }
 .op-mul  { color: var(--green-deep); }

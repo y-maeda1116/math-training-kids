@@ -18,12 +18,13 @@ const shuffle = (arr) => {
  * 定数
  * ============================================================ */
 const UNITS = {
+  addEasy: { label: 'はじめたしざん', op: '+' },
   add: { label: 'たしざん', op: '+' },
   sub: { label: 'ひきざん', op: '−' },
   mul: { label: 'かけざん', op: '×' },
   div: { label: 'わりざん', op: '÷' },
 };
-const UNIT_COLORS = { add: 'var(--red-deep)', sub: 'var(--blue-deep)', mul: 'var(--green-deep)', div: 'var(--orange)' };
+const UNIT_COLORS = { addEasy: 'var(--pink-deep)', add: 'var(--red-deep)', sub: 'var(--blue-deep)', mul: 'var(--green-deep)', div: 'var(--orange)' };
 const UNIT_KEYS = ['add', 'sub', 'mul', 'div'];
 const TA_TOTAL = 10;
 const COMBO_MILESTONE = 5;
@@ -33,6 +34,13 @@ const DELAY_AFTER_WRONG_MS = 1500;
 /* ============================================================
  * 問題生成（純粋関数）
  * ============================================================ */
+
+/** はじめたしざん: 3までのかず どうし（こたえは6まで） */
+const makeAddEasy = () => {
+  const a = randInt(1, 3);
+  const b = randInt(1, 3);
+  return { type: 'addEasy', a, b, answer: a + b, dummies: [a + b + 1, a + b + 2, Math.max(a, b)] };
+};
 
 /** たしざん: 1桁 + 1桁 */
 const makeAdd = () => {
@@ -63,7 +71,7 @@ const makeDiv = () => {
   return { type: 'div', a: divisor * quotient, b: divisor, answer: quotient, dummies: [divisor, quotient + 1, quotient - 1] };
 };
 
-const GENERATORS = { add: makeAdd, sub: makeSub, mul: makeMul, div: makeDiv };
+const GENERATORS = { addEasy: makeAddEasy, add: makeAdd, sub: makeSub, mul: makeMul, div: makeDiv };
 
 /** 指定たんごの問題を1つ生成（ミックスは4たんごからランダム） */
 const generateQuestion = (unit) => {
